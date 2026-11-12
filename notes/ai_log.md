@@ -110,3 +110,9 @@ Template:
 - Problem: a Future returned without `await` from a `try` escapes that `try`'s `catch`, so a failure in the reload would bypass the `on TaskFailure` handler. The same draft also assigned `_pageSize` in the initializer list instead of using an initializing formal.
 - Detected by: analyzer (`unawaited_return_in_try_block` warning, `prefer_initializing_formals` info)
 - Fix: `await _load(...); return;` and `@ignoreParam this._pageSize`; codegen confirmed injectable still ignores the parameter (DI config unchanged), `flutter analyze` clean.
+
+## 14. Title and description edits added to history (02:08, from `date`)
+- Suggested: the update path recorded only priority changes; README (commit 0d26a55) listed "title and description edits are saved but not recorded" as a known limitation, because the brief defines just four event types.
+- Problem: the human asked for title and description changes to appear in the task history, reversing that scope decision.
+- Detected by: human review (feature request)
+- Fix: added `ActivityType.titleChanged` / `descriptionChanged` (stored as text, no schema change). `updateTask` now inserts one event per changed field (title, description, priority) in the same transaction, after the failure guard, with normalized old/new values. The timeline shows title as old → new and description as added / changed / removed. The repository test that asserted "title change adds no activity" was replaced, and 5 repository tests plus an end-to-end check were added. `flutter analyze` clean and all 55 tests pass. Landed in 12952d6 (see entry 13).
