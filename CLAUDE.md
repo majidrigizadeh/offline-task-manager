@@ -19,8 +19,9 @@ rule changes, update this file in the same change.
 Whenever an AI suggestion is **rejected, corrected, or found wrong** (by a
 human, a compiler error, analyzer, or a failing test), append an entry to
 `notes/ai_log.md` *immediately*, using its template. Never write entries
-after the fact from memory, and never invent entries. `AI_WORKFLOW.md` is
-derived only from that log.
+after the fact from memory, and never invent entries. Timestamps must come
+from running `date`, never be estimated. `AI_WORKFLOW.md` is derived only
+from that log.
 
 ## Architecture
 ```
