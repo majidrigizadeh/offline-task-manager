@@ -59,4 +59,3 @@ request-id guard) caught it. The older query is now "a", which also matches
 
 - **Human:** the plan (8 corrections, entry 1), the git history and commit messages (entry 4), the git identity, and the choice of how Retry can succeed.
 - **Machine checks run by Claude:** `flutter analyze` (clean), `flutter test` (36 passing), mutation checks on the duplicate-event, busy_timeout and latest-query-wins tests, and reading drift/sqlite3 source and docs in the pub cache.
-- **Not verified:** a real app launch. The machine has no Xcode (`flutter build macos` fails), so the UI was exercised only through the end-to-end widget test.

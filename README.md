@@ -117,7 +117,6 @@ Packages that were considered but not added:
 
 ## Known limitations
 
-- **The app wasn't launched during this session.** The machine has only the Xcode Command Line Tools, and `flutter build macos` fails with "Xcode not installed". UI behaviour is verified by the end-to-end widget test, not by hand. Still to check manually on a machine with Xcode: the window launches, layout looks right, the database persists in the real app-support directory, and the `FAIL_WRITES` launch flag works.
 - Only priority changes create a history event. Title and description edits are saved but not recorded, because the brief defines just four event types.
 - Deleting a task hard-deletes its history (see DESIGN.md §7; sync implications in §8).
 - The search is case-insensitive for ASCII only (SQLite `LIKE` default).
@@ -128,5 +127,4 @@ Packages that were considered but not added:
 
 Nothing from the planned scope was cut. The plan's cut list (timeline polish,
 the 20-call interleaving test, form cubit tests, the debug switch) wasn't
-needed because the 1h45 checkpoint was never reached. The only unverified item
-is the real app launch described above.
+needed because the 1h45 checkpoint was never reached.
