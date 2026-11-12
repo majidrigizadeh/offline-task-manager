@@ -98,3 +98,9 @@ Template:
 - Problem: that prefix also matches `import 'package:...'`, so the relative import landed above the package imports in 8 files (17 `directives_ordering` infos).
 - Detected by: analyzer
 - Fix: removed the line and re-inserted it alphabetically within the relative-import block; `flutter analyze` clean, `flutter test` all passed.
+
+## 11. Target platform documented as macOS only (01:27, from `date`)
+- Suggested: CLAUDE.md and README.md described the project as "macOS target" / "Supported target: macOS desktop", with only `flutter run -d macos` commands.
+- Problem: the project targets Android, iOS and macOS, so the AI contract and README understated the scope and steered future changes toward desktop-only assumptions.
+- Detected by: human review
+- Fix: CLAUDE.md and README.md now list Android, iOS and macOS; CLAUDE.md adds a rule that code and UI must work on all three; run commands use `flutter run -d <device>`. Checked that no code change is needed (path_provider and sqlite3 3.x build hooks cover all three platforms).

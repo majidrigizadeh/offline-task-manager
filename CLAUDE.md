@@ -1,7 +1,9 @@
 # CLAUDE.md — AI assistant instructions for this repository
 
-Offline task manager (Flutter, macOS target). Feature-first Clean Architecture,
-Cubit state management, Drift/SQLite persistence. This file is the contract
+Offline task manager (Flutter; targets Android, iOS and macOS). Feature-first
+Clean Architecture, Cubit state management, Drift/SQLite persistence. Code must
+work on all three targets: no desktop-only or mobile-only APIs, and UI must fit
+phone screens as well as desktop windows. This file is the contract
 AI assistants must follow when changing code here. Keep it current: when a
 rule changes, update this file in the same change.
 
@@ -106,8 +108,9 @@ dart run build_runner build --delete-conflicting-outputs   # after changing any 
 dart format .
 flutter analyze
 flutter test
-flutter run -d macos
-flutter run -d macos --dart-define=FAIL_WRITES=true        # simulate write failures
+flutter devices                                            # list device ids
+flutter run -d <device>                                    # macos, an iOS simulator, or an Android emulator/device
+flutter run -d <device> --dart-define=FAIL_WRITES=true     # simulate write failures
 ```
 
 ## Testing

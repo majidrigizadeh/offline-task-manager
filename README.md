@@ -41,8 +41,9 @@ wall-clock time on this machine.
 ## Requirements
 
 - Flutter **3.47.9** (stable) / Dart **3.13.7**. Developed and tested with these versions; `pubspec.yaml` requires Dart `^3.13.7`.
-- **Supported target: macOS desktop.** Building it needs a full Xcode install.
-- Other targets weren't attempted. Web in particular would need Drift's wasm/web-worker setup, which is out of scope.
+- **Supported targets: Android, iOS and macOS.** iOS and macOS builds need a full Xcode install; Android needs the Android SDK.
+- No platform-specific code is required: `path_provider` resolves the database location on each platform, and `sqlite3` 3.x bundles native SQLite for all three through build hooks.
+- Windows, Linux and web aren't supported targets. Web in particular would need Drift's wasm/web-worker setup, which is out of scope.
 
 ## Setup & run
 
@@ -51,13 +52,14 @@ flutter pub get
 # Generated code is committed; regenerate after changing any annotated class:
 dart run build_runner build --delete-conflicting-outputs
 
-flutter run -d macos
+flutter devices          # find the device id
+flutter run -d macos     # or an iOS simulator / Android emulator id
 ```
 
 ### Simulate write failures
 
 ```bash
-flutter run -d macos --dart-define=FAIL_WRITES=true
+flutter run -d <device> --dart-define=FAIL_WRITES=true
 ```
 
 Every write then fails *inside* its transaction, right after the first
