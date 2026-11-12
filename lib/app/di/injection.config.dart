@@ -15,6 +15,7 @@ import 'package:injectable/injectable.dart' as _i526;
 import 'package:uuid/uuid.dart' as _i706;
 
 import '../../core/config/write_failure_config.dart' as _i916;
+import '../../core/database/app_database.dart' as _i50;
 import '../../core/utils/clock.dart' as _i874;
 import 'app_module.dart' as _i460;
 
@@ -26,6 +27,10 @@ extension GetItInjectableX on _i174.GetIt {
   }) {
     final gh = _i526.GetItHelper(this, environment, environmentFilter);
     final appModule = _$AppModule();
+    gh.lazySingleton<_i50.AppDatabase>(
+      () => appModule.database,
+      dispose: _i460.closeDatabase,
+    );
     gh.lazySingleton<_i916.WriteFailureConfig>(
       () => appModule.writeFailureConfig,
     );
