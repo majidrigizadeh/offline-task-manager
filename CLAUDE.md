@@ -113,6 +113,6 @@ flutter run -d macos --dart-define=FAIL_WRITES=true        # simulate write fail
 ## Testing
 - Database behavior is tested against real SQLite (`NativeDatabase.memory()`
   or a temp file), not mocks.
-- Cubit tests use `bloc_test` with fakes/mocktail for use cases.
+- Cubit tests use `bloc_test` with hand-written fakes (`test/helpers/`); use cases are real.
 - Each test creates its own database; tests must be independent.
 - Never claim a test passes without running it.

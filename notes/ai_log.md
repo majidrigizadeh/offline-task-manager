@@ -34,6 +34,7 @@ Template:
   (5) `null` vs `""` description would register as a change and write;
   (6) guard placement "between two writes" missed single-write updates.
 - Detected by: human review of the plan.
+- Later finding: point (3)'s premise was only partly right. Drift also begins transactions with `BEGIN IMMEDIATE`, which serializes writers across connections too, so the conditional UPDATE can't be isolated by a test on this backend (entry 6).
 - Fix: CLAUDE.md + this log in phase 0; repository tests right after the
   data source; added a two-connection test on a shared temp file; existence
   check on 0 rows; shared text normalizer; "guard after first write, always";
@@ -65,7 +66,8 @@ Template:
 - Suggested: Claude wrote a test firing `completeTask` concurrently from two `NativeDatabase.createInBackground` connections on one file, named "relies on the conditional UPDATE, not on Drift serialization".
 - Problem: a mutation check (temporarily replacing the conditional UPDATE with a naive read-check-write) still passed all 4 concurrency tests. The two connections' transactions never actually overlapped, so the test name overclaimed.
 - Detected by: deliberate mutation test (swap implementation, run tests, restore from backup).
-- Fix: replaced it with a deterministic test: connection B holds an open write transaction that completes the task; connection A's `completeTask` starts while B holds the lock; B commits. Re-ran the mutation check to confirm the naive version fails it.
+- Fix: replaced it with a deterministic test: connection B holds an open write transaction that completes the task; connection A's `completeTask` starts while B holds the lock; B commits.
+- Correction (added later): the line above originally ended "Re-ran the mutation check to confirm the naive version fails it". That was written before the check ran. The check actually showed the naive version still PASSED. See entry 6.
 
 ## 6. Wrong locking model behind "UPDATE must be the first statement"
 - Suggested: Claude's plan and a code comment claimed the conditional UPDATE had to be the first statement of the transaction "so busy_timeout applies instead of failing on lock upgrade", and that a cross-connection test would show the naive read-check-write failing.
@@ -84,3 +86,9 @@ Template:
 - Problem: "al" and "alp" match exactly the same tasks, so the test passed even with the stale-request guard removed.
 - Detected by: mutation test (removed the request-id check; only the other race test failed).
 - Fix: older query changed to "a", which also matches "beta". Re-ran the mutation check: both race tests now fail without the guard and pass with it.
+
+## 9. Wrong finder in the end-to-end widget test (00:44)
+- Suggested: Claude's widget test located the tile menu with `find.byType(PopupMenuButton<Object?>)`.
+- Problem: the tile's menu is `PopupMenuButton<_TileAction>`, and `byType` matches the exact generic type, so nothing was found ("Bad state: No element").
+- Detected by: failing test run.
+- Fix: find it by its default tooltip, `find.byTooltip('Show menu')`.
