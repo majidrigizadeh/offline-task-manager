@@ -22,6 +22,11 @@ final class TaskNotFoundFailure extends TaskFailure {
   const TaskNotFoundFailure(String id) : super('Task $id no longer exists.');
 }
 
+/// Input rejected by business rules (e.g. empty title). Nothing was written.
+final class InvalidInputFailure extends TaskFailure {
+  const InvalidInputFailure(super.message);
+}
+
 final class UnexpectedFailure extends TaskFailure {
   const UnexpectedFailure([super.message = 'Something went wrong.']);
 }

@@ -84,9 +84,11 @@ lib/features/<feature>/{domain,data,presentation}
   **inside the transaction, right after the first write**, always — even for
   single-write operations — so rollback is exercised.
 - No-op mutations write **nothing** (no row update, no activity).
-- complete/reopen use a conditional `UPDATE ... WHERE completed = <opposite>`
-  as the **first statement** of the transaction; 0 rows affected → check
-  existence → no-op (`false`) or `TaskFailure.notFound`.
+- complete/reopen use a single conditional
+  `UPDATE ... WHERE completed = <opposite>` as the check-and-set (never a
+  separate read-then-write); 0 rows affected → check existence → no-op
+  (`false`) or `TaskFailure.notFound`. Note: Drift's native transactions
+  begin with `BEGIN IMMEDIATE`; keep `PRAGMA busy_timeout` in `beforeOpen`.
 - Text normalization (`core/utils/text_normalizer.dart`) is applied both in the
   form cubit and in the data source before diffing.
 - Activities are deleted with their task via `ON DELETE CASCADE`
