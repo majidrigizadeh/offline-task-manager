@@ -28,7 +28,7 @@ class TaskListPage extends StatelessWidget {
     final cubit = context.read<TaskListCubit>();
     final persisted = await Navigator.of(context)
         .pushNamed<bool>(AppRouter.taskForm, arguments: task);
-    if (persisted ?? false) await cubit.load();
+    if (persisted ?? false) await cubit.refresh();
   }
 
   Future<void> _confirmDelete(BuildContext context, TaskEntity task) async {
@@ -133,7 +133,10 @@ class _TaskListBody extends StatelessWidget {
       buildWhen: (prev, curr) =>
           prev.status != curr.status ||
           prev.tasks != curr.tasks ||
-          prev.loadError != curr.loadError,
+          prev.loadError != curr.loadError ||
+          prev.hasMore != curr.hasMore ||
+          prev.isLoadingMore != curr.isLoadingMore ||
+          prev.loadMoreError != curr.loadMoreError,
       builder: (context, state) {
         final isLoading = state.status == TaskListStatus.loading;
         if ((isLoading || state.status == TaskListStatus.initial) &&
@@ -165,9 +168,17 @@ class _TaskListBody extends StatelessWidget {
             Expanded(
               child: ListView.separated(
                 padding: const EdgeInsets.only(bottom: 88),
-                itemCount: state.tasks.length,
+                // One extra row for the next-page footer.
+                itemCount: state.tasks.length + (state.hasMore ? 1 : 0),
                 separatorBuilder: (_, _) => const Divider(height: 1),
                 itemBuilder: (context, index) {
+                  if (index == state.tasks.length) {
+                    return _LoadMoreFooter(
+                      isLoading: state.isLoadingMore,
+                      error: state.loadMoreError,
+                      onLoadMore: context.read<TaskListCubit>().loadMore,
+                    );
+                  }
                   final task = state.tasks[index];
                   return TaskTile(
                     key: ValueKey(task.id),
@@ -184,6 +195,72 @@ class _TaskListBody extends StatelessWidget {
           ],
         );
       },
+    );
+  }
+}
+
+/// Last row of the list while more pages exist. ListView builds rows lazily,
+/// so being built means the user has scrolled near the end (or the loaded
+/// rows don't fill the viewport): request the next page then. A failed
+/// request waits for an explicit retry instead of looping.
+class _LoadMoreFooter extends StatefulWidget {
+  const _LoadMoreFooter({
+    required this.isLoading,
+    required this.error,
+    required this.onLoadMore,
+  });
+
+  final bool isLoading;
+  final String? error;
+  final VoidCallback onLoadMore;
+
+  @override
+  State<_LoadMoreFooter> createState() => _LoadMoreFooterState();
+}
+
+class _LoadMoreFooterState extends State<_LoadMoreFooter> {
+  @override
+  void initState() {
+    super.initState();
+    _requestIfIdle();
+  }
+
+  @override
+  void didUpdateWidget(_LoadMoreFooter oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _requestIfIdle();
+  }
+
+  void _requestIfIdle() {
+    if (widget.isLoading || widget.error != null) return;
+    // Not during build: the cubit emits synchronously.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) widget.onLoadMore();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final error = widget.error;
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Center(
+        child: error == null
+            ? const SizedBox.square(
+                dimension: 24,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(error, textAlign: TextAlign.center),
+                  TextButton(
+                    onPressed: widget.onLoadMore,
+                    child: const Text(AppMessages.retry),
+                  ),
+                ],
+              ),
+      ),
     );
   }
 }

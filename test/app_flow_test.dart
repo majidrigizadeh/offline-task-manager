@@ -6,6 +6,9 @@ import 'package:testniksam/app/app.dart';
 import 'package:testniksam/app/di/injection.dart';
 import 'package:testniksam/core/config/write_failure_config.dart';
 import 'package:testniksam/core/database/app_database.dart';
+import 'package:testniksam/features/tasks/domain/enums/task_priority.dart';
+import 'package:testniksam/features/tasks/domain/repositories/task_repository.dart';
+import 'package:testniksam/features/tasks/presentation/widgets/task_tile.dart';
 
 /// Drives the real app (DI, router, cubits, repository, SQLite) end to end,
 /// swapping only the on-disk database for an in-memory one.
@@ -111,5 +114,58 @@ void main() {
       () => db.select(db.taskActivities).get(),
     );
     expect(activitiesAfter, activitiesBefore);
+  });
+
+  testWidgets('scrolling loads further pages; a mutation keeps them loaded', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(400, 800); // phone-sized
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    // 45 tasks = 3 pages of 20; "Task 44" is newest, "Task 00" oldest.
+    await tester.runAsync(() async {
+      final repository = getIt<TaskRepository>();
+      for (var i = 0; i < 45; i++) {
+        await repository.createTask(
+          title: 'Task ${i.toString().padLeft(2, '0')}',
+          priority: TaskPriority.medium,
+        );
+      }
+    });
+
+    await tester.pumpWidget(const TaskApp());
+    await tester.pumpAndSettle();
+    expect(find.text('Task 44'), findsOneWidget);
+
+    final list = find.descendant(
+      of: find.byType(ListView),
+      matching: find.byType(Scrollable),
+    );
+    final oldest = find.text('Task 00');
+    await tester.scrollUntilVisible(oldest, 300, scrollable: list);
+    await tester.pumpAndSettle();
+    expect(oldest, findsOneWidget);
+
+    // Completing the last row reloads from storage without dropping pages.
+    await tester.tap(
+      find.descendant(
+        of: find.ancestor(of: oldest, matching: find.byType(TaskTile)),
+        matching: find.byType(Checkbox),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(oldest, findsOneWidget);
+    expect(
+      tester
+          .widget<Checkbox>(
+            find.descendant(
+              of: find.ancestor(of: oldest, matching: find.byType(TaskTile)),
+              matching: find.byType(Checkbox),
+            ),
+          )
+          .value,
+      isTrue,
+    );
   });
 }
