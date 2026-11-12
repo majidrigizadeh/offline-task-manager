@@ -48,3 +48,9 @@ Template:
 - Detected by: grepping the option names in drift_dev's `options.dart`
   before running codegen.
 - Fix: removed it; use `@DataClassName('TaskRow')` on each table instead.
+
+## 00:31 — Commit message formatting
+- Suggested: Claude hard-wrapped commit bodies at ~72 columns and appended a `Co-Authored-By: Claude` trailer.
+- Problem: the human did not want the wrapped line breaks or the trailer in the history.
+- Detected by: human review of `git log`.
+- Fix: rewrote the 4 existing commits with `git commit-tree` (same trees and dates, cleaned messages); rule added to CLAUDE.md (single-line bullets, no trailers).

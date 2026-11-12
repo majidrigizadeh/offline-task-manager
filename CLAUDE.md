@@ -11,6 +11,9 @@ rule changes, update this file in the same change.
 - **Never** run `git reset`, `git checkout`, `git restore`, `git clean`,
   `git rebase`, force pushes, or squash commits.
 - Read-only git (`status`, `log`, `diff`, `show`) is always fine.
+- Commit message format: Conventional Commit subject, blank line, then body
+  where each bullet/paragraph is a **single line** (no hard wrapping).
+  **No `Co-Authored-By` or other trailers.**
 
 ## AI log — mandatory
 Whenever an AI suggestion is **rejected, corrected, or found wrong** (by a
