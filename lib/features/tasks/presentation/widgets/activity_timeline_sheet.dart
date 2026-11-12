@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../../../../core/constants/app_messages.dart';
 import '../../domain/entities/task_activity_entity.dart';
 import '../../domain/entities/task_entity.dart';
 import '../../domain/enums/activity_type.dart';
@@ -26,7 +27,9 @@ class ActivityTimelineSheet extends StatefulWidget {
 class _ActivityTimelineSheetState extends State<ActivityTimelineSheet> {
   late final Future<List<TaskActivityEntity>> _activities = widget
       .getActivities(widget.task.id);
-  static final DateFormat _format = DateFormat('MMM d, y · HH:mm:ss');
+  static final DateFormat _format = DateFormat(
+    AppMessages.activityTimestampFormat,
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -42,7 +45,7 @@ class _ActivityTimelineSheetState extends State<ActivityTimelineSheet> {
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
               child: Text(
-                'History — ${widget.task.title}',
+                AppMessages.historyTitle(widget.task.title),
                 style: Theme.of(context).textTheme.titleMedium,
               ),
             ),
@@ -53,7 +56,7 @@ class _ActivityTimelineSheetState extends State<ActivityTimelineSheet> {
                   if (snapshot.hasError) {
                     return const Padding(
                       padding: EdgeInsets.all(24),
-                      child: Text('Could not load history.'),
+                      child: Text(AppMessages.loadHistoryFailed),
                     );
                   }
                   final activities = snapshot.data;
@@ -91,11 +94,13 @@ class _ActivityTimelineSheetState extends State<ActivityTimelineSheet> {
   };
 
   static String _describe(TaskActivityEntity a) => switch (a.type) {
-    ActivityType.created => 'Task created',
-    ActivityType.priorityChanged =>
-      'Priority changed: ${_priority(a.oldValue)} → ${_priority(a.newValue)}',
-    ActivityType.completed => 'Task completed',
-    ActivityType.reopened => 'Task reopened',
+    ActivityType.created => AppMessages.activityCreated,
+    ActivityType.priorityChanged => AppMessages.activityPriorityChanged(
+      _priority(a.oldValue),
+      _priority(a.newValue),
+    ),
+    ActivityType.completed => AppMessages.activityCompleted,
+    ActivityType.reopened => AppMessages.activityReopened,
   };
 
   static String _priority(String? name) =>

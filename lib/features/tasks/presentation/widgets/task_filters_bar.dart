@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/constants/app_messages.dart';
 import '../../domain/entities/task_query.dart';
 import '../../domain/enums/completion_filter.dart';
 import '../../domain/enums/task_priority.dart';
@@ -26,10 +27,10 @@ class TaskFiltersBar extends StatelessWidget {
             children: [
               DropdownButton<TaskPriority?>(
                 value: query.priority,
-                hint: const Text('Any priority'),
+                hint: const Text(AppMessages.anyPriority),
                 onChanged: cubit.priorityFilterChanged,
                 items: [
-                  const DropdownMenuItem(child: Text('Any priority')),
+                  const DropdownMenuItem(child: Text(AppMessages.anyPriority)),
                   for (final p in TaskPriority.values)
                     DropdownMenuItem(value: p, child: Text(p.label)),
                 ],
@@ -39,15 +40,15 @@ class TaskFiltersBar extends StatelessWidget {
                 segments: const [
                   ButtonSegment(
                     value: CompletionFilter.all,
-                    label: Text('All'),
+                    label: Text(AppMessages.filterAll),
                   ),
                   ButtonSegment(
                     value: CompletionFilter.active,
-                    label: Text('Active'),
+                    label: Text(AppMessages.filterActive),
                   ),
                   ButtonSegment(
                     value: CompletionFilter.completed,
-                    label: Text('Done'),
+                    label: Text(AppMessages.filterDone),
                   ),
                 ],
                 selected: {query.completion},

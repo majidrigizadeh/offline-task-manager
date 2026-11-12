@@ -92,3 +92,9 @@ Template:
 - Problem: the tile's menu is `PopupMenuButton<_TileAction>`, and `byType` matches the exact generic type, so nothing was found ("Bad state: No element").
 - Detected by: failing test run.
 - Fix: find it by its default tooltip, `find.byTooltip('Show menu')`.
+
+## 10. Misplaced import when extracting UI strings (01:01, from `date`)
+- Suggested: a script that moved all page/widget strings into `core/constants/app_messages.dart` and inserted its import before the first line starting with `import '`.
+- Problem: that prefix also matches `import 'package:...'`, so the relative import landed above the package imports in 8 files (17 `directives_ordering` infos).
+- Detected by: analyzer
+- Fix: removed the line and re-inserted it alphabetically within the relative-import block; `flutter analyze` clean, `flutter test` all passed.

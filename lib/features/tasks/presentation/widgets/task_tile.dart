@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/constants/app_messages.dart';
 import '../../domain/entities/task_entity.dart';
 import '../cubit/task_list_cubit.dart';
 import '../states/task_list_state.dart';
@@ -72,14 +73,17 @@ class TaskTile extends StatelessWidget {
                     _TileAction.delete => onDelete(),
                   },
                   itemBuilder: (_) => const [
-                    PopupMenuItem(value: _TileAction.edit, child: Text('Edit')),
+                    PopupMenuItem(
+                      value: _TileAction.edit,
+                      child: Text(AppMessages.edit),
+                    ),
                     PopupMenuItem(
                       value: _TileAction.history,
-                      child: Text('History'),
+                      child: Text(AppMessages.history),
                     ),
                     PopupMenuItem(
                       value: _TileAction.delete,
-                      child: Text('Delete'),
+                      child: Text(AppMessages.delete),
                     ),
                   ],
                 ),

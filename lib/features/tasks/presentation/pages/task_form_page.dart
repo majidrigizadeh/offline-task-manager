@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/constants/app_messages.dart';
 import '../../domain/enums/task_priority.dart';
 import '../cubit/task_form_cubit.dart';
 import '../states/task_form_state.dart';
@@ -45,7 +46,11 @@ class _TaskFormPageState extends State<TaskFormPage> {
       builder: (context, state) {
         final saving = state.status == TaskFormStatus.saving;
         return Scaffold(
-          appBar: AppBar(title: Text(state.isEdit ? 'Edit task' : 'New task')),
+          appBar: AppBar(
+            title: Text(
+              state.isEdit ? AppMessages.editTask : AppMessages.newTask,
+            ),
+          ),
           body: ListView(
             padding: const EdgeInsets.all(16),
             children: [
@@ -56,7 +61,7 @@ class _TaskFormPageState extends State<TaskFormPage> {
                 textInputAction: TextInputAction.next,
                 onChanged: _cubit.titleChanged,
                 decoration: InputDecoration(
-                  labelText: 'Title *',
+                  labelText: AppMessages.titleLabel,
                   border: const OutlineInputBorder(),
                   errorText: state.titleError,
                 ),
@@ -69,12 +74,15 @@ class _TaskFormPageState extends State<TaskFormPage> {
                 maxLines: 6,
                 onChanged: _cubit.descriptionChanged,
                 decoration: const InputDecoration(
-                  labelText: 'Description (optional)',
+                  labelText: AppMessages.descriptionLabel,
                   border: OutlineInputBorder(),
                 ),
               ),
               const SizedBox(height: 16),
-              Text('Priority', style: Theme.of(context).textTheme.labelLarge),
+              Text(
+                AppMessages.priority,
+                style: Theme.of(context).textTheme.labelLarge,
+              ),
               const SizedBox(height: 8),
               SegmentedButton<TaskPriority>(
                 segments: [
@@ -104,8 +112,8 @@ class _TaskFormPageState extends State<TaskFormPage> {
                     : const Icon(Icons.save),
                 label: Text(
                   state.status == TaskFormStatus.failure
-                      ? 'Retry save'
-                      : 'Save',
+                      ? AppMessages.retrySave
+                      : AppMessages.save,
                 ),
               ),
             ],

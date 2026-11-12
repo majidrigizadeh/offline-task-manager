@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../app/router/app_router.dart';
 import '../../../../core/config/write_failure_config.dart';
+import '../../../../core/constants/app_messages.dart';
 import '../../domain/entities/task_entity.dart';
 import '../../domain/usecases/get_task_activities.dart';
 import '../cubit/task_list_cubit.dart';
@@ -35,16 +36,16 @@ class TaskListPage extends StatelessWidget {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Delete task?'),
-        content: Text('"${task.title}" and its history will be deleted.'),
+        title: const Text(AppMessages.deleteTaskTitle),
+        content: Text(AppMessages.deleteTaskContent(task.title)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
+            child: const Text(AppMessages.cancel),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Delete'),
+            child: const Text(AppMessages.delete),
           ),
         ],
       ),
@@ -76,7 +77,7 @@ class TaskListPage extends StatelessWidget {
               content: Text(state.actionError!.message),
               action: cubit.canRetry
                   ? SnackBarAction(
-                      label: 'Retry',
+                      label: AppMessages.retry,
                       onPressed: cubit.retryLastAction,
                     )
                   : null,
@@ -85,13 +86,13 @@ class TaskListPage extends StatelessWidget {
       },
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('Tasks'),
+          title: const Text(AppMessages.taskListTitle),
           actions: [FailureModeSwitch(config: failureConfig)],
         ),
         floatingActionButton: FloatingActionButton.extended(
           onPressed: () => _openForm(context),
           icon: const Icon(Icons.add),
-          label: const Text('New task'),
+          label: const Text(AppMessages.newTask),
         ),
         body: Column(
           children: [
@@ -142,17 +143,17 @@ class _TaskListBody extends StatelessWidget {
         if (state.status == TaskListStatus.failure) {
           return _Message(
             icon: Icons.error_outline,
-            text: state.loadError ?? 'Could not load tasks.',
+            text: state.loadError ?? AppMessages.loadTasksFailed,
             action: TextButton(
               onPressed: context.read<TaskListCubit>().load,
-              child: const Text('Retry'),
+              child: const Text(AppMessages.retry),
             ),
           );
         }
         if (state.status == TaskListStatus.empty) {
           return const _Message(
             icon: Icons.inbox_outlined,
-            text: 'No tasks match the current search and filters.',
+            text: AppMessages.noTasksMatch,
           );
         }
         return Column(

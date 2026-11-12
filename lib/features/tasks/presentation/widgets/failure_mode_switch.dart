@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../../../../core/config/write_failure_config.dart';
+import '../../../../core/constants/app_messages.dart';
 
 /// Developer control for write-failure simulation. Only shown in debug builds
 /// or when the app was launched with `--dart-define=FAIL_WRITES=true`.
@@ -26,7 +27,7 @@ class _FailureModeSwitchState extends State<FailureModeSwitch> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Text('Fail writes'),
+          const Text(AppMessages.failWrites),
           Switch(
             value: widget.config.enabled,
             onChanged: (value) => setState(() => widget.config.enabled = value),

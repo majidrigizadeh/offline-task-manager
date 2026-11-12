@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/constants/app_messages.dart';
 import '../cubit/task_list_cubit.dart';
 
 /// Owns (and disposes) its controller; debouncing lives in the cubit.
@@ -37,14 +38,14 @@ class _SearchFieldState extends State<SearchField> {
         setState(() {}); // toggles the clear button
       },
       decoration: InputDecoration(
-        hintText: 'Search by title',
+        hintText: AppMessages.searchHint,
         prefixIcon: const Icon(Icons.search),
         border: const OutlineInputBorder(),
         isDense: true,
         suffixIcon: _controller.text.isEmpty
             ? null
             : IconButton(
-                tooltip: 'Clear',
+                tooltip: AppMessages.clear,
                 icon: const Icon(Icons.clear),
                 onPressed: _clear,
               ),

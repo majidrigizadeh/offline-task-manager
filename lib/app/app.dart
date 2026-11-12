@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../core/constants/app_messages.dart';
 import 'router/app_router.dart';
 
 class TaskApp extends StatelessWidget {
@@ -8,7 +9,7 @@ class TaskApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Tasks',
+      title: AppMessages.appTitle,
       theme: ThemeData(colorSchemeSeed: Colors.indigo, useMaterial3: true),
       onGenerateRoute: AppRouter.onGenerateRoute,
       initialRoute: AppRouter.taskList,
