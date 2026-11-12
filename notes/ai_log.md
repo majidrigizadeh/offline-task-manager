@@ -104,3 +104,9 @@ Template:
 - Problem: the project targets Android, iOS and macOS, so the AI contract and README understated the scope and steered future changes toward desktop-only assumptions.
 - Detected by: human review
 - Fix: CLAUDE.md and README.md now list Android, iOS and macOS; CLAUDE.md adds a rule that code and UI must work on all three; run commands use `flutter run -d <device>`. Checked that no code change is needed (path_provider and sqlite3 3.x build hooks cover all three platforms).
+
+## 12. Un-awaited return inside `try` in `loadMore` (01:44, from `date`; detected a few minutes earlier in the same session)
+- Suggested: when a next page overlapped rows already shown, Claude's `TaskListCubit.loadMore` did `return _load(...)` from inside its `try` block.
+- Problem: a Future returned without `await` from a `try` escapes that `try`'s `catch`, so a failure in the reload would bypass the `on TaskFailure` handler. The same draft also assigned `_pageSize` in the initializer list instead of using an initializing formal.
+- Detected by: analyzer (`unawaited_return_in_try_block` warning, `prefer_initializing_formals` info)
+- Fix: `await _load(...); return;` and `@ignoreParam this._pageSize`; codegen confirmed injectable still ignores the parameter (DI config unchanged), `flutter analyze` clean.
