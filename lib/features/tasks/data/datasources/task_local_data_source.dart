@@ -150,6 +150,24 @@ class TaskLocalDataSource {
       );
       _failureConfig.throwIfEnabled('updateTask');
 
+      // One event per changed field, in form order; rowid keeps that order
+      // in the timeline when the timestamps are equal.
+      if (titleChanged) {
+        await _insertActivity(
+          taskId: id,
+          type: ActivityType.titleChanged,
+          oldValue: TextNormalizer.title(current.title),
+          newValue: newTitle,
+        );
+      }
+      if (descriptionChanged) {
+        await _insertActivity(
+          taskId: id,
+          type: ActivityType.descriptionChanged,
+          oldValue: TextNormalizer.description(current.description),
+          newValue: newDescription,
+        );
+      }
       if (priorityChanged) {
         await _insertActivity(
           taskId: id,

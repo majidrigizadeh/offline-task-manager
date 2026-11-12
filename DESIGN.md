@@ -64,7 +64,7 @@ Every mutation in `TaskLocalDataSource` runs inside **one `db.transaction`**:
 | Operation | Inside the transaction |
 |---|---|
 | create | insert task → **guard** → insert `created` |
-| update | read row (missing → not found) → diff the normalized input; **no diff → return `false` and write nothing** → update only the changed columns → **guard** → if priority changed, insert `priorityChanged(old, new)` |
+| update | read row (missing → not found) → diff the normalized input; **no diff → return `false` and write nothing** → update only the changed columns → **guard** → insert one event per changed field, in form order: `titleChanged`, `descriptionChanged`, `priorityChanged` (each with old and new normalized values) |
 | complete / reopen | `UPDATE … SET completed = X WHERE id = ? AND completed = !X` → 0 rows: task exists → no-op `false`, task missing → not found; 1 row → **guard** → insert the event |
 | delete | `DELETE` (activities cascade in the same statement) → 0 rows → not found → **guard** |
 

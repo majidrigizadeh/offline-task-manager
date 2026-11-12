@@ -88,6 +88,8 @@ class _ActivityTimelineSheetState extends State<ActivityTimelineSheet> {
 
   static IconData _icon(ActivityType type) => switch (type) {
     ActivityType.created => Icons.add_circle_outline,
+    ActivityType.titleChanged => Icons.title,
+    ActivityType.descriptionChanged => Icons.notes,
     ActivityType.priorityChanged => Icons.flag_outlined,
     ActivityType.completed => Icons.check_circle_outline,
     ActivityType.reopened => Icons.replay,
@@ -95,6 +97,15 @@ class _ActivityTimelineSheetState extends State<ActivityTimelineSheet> {
 
   static String _describe(TaskActivityEntity a) => switch (a.type) {
     ActivityType.created => AppMessages.activityCreated,
+    ActivityType.titleChanged => AppMessages.activityTitleChanged(
+      a.oldValue ?? '',
+      a.newValue ?? '',
+    ),
+    ActivityType.descriptionChanged => switch ((a.oldValue, a.newValue)) {
+      (null, _) => AppMessages.activityDescriptionAdded,
+      (_, null) => AppMessages.activityDescriptionRemoved,
+      _ => AppMessages.activityDescriptionChanged,
+    },
     ActivityType.priorityChanged => AppMessages.activityPriorityChanged(
       _priority(a.oldValue),
       _priority(a.newValue),

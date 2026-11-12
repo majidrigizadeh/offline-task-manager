@@ -53,6 +53,11 @@ abstract final class AppMessages {
   static const String activityCreated = 'Task created';
   static const String activityCompleted = 'Task completed';
   static const String activityReopened = 'Task reopened';
+  static String activityTitleChanged(String from, String to) =>
+      'Title changed: "$from" → "$to"';
+  static const String activityDescriptionAdded = 'Description added';
+  static const String activityDescriptionChanged = 'Description changed';
+  static const String activityDescriptionRemoved = 'Description removed';
   static String activityPriorityChanged(String from, String to) =>
       'Priority changed: $from → $to';
   static const String activityTimestampFormat = 'MMM d, y · HH:mm:ss';

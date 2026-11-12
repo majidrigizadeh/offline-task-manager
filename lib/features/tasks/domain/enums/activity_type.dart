@@ -1,1 +1,8 @@
-enum ActivityType { created, priorityChanged, completed, reopened }
+enum ActivityType {
+  created,
+  titleChanged,
+  descriptionChanged,
+  priorityChanged,
+  completed,
+  reopened,
+}

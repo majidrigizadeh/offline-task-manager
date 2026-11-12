@@ -224,19 +224,115 @@ void main() {
       expect(events.last.newValue, 'high');
       expect((await repository.getTask(id)).priority, TaskPriority.high);
     });
+  });
 
-    test('title change without priority change adds no activity', () async {
+  group('title and description change activities', () {
+    test('title change records normalized old and new values', () async {
       final id = await createTask(title: 'Old', priority: TaskPriority.low);
 
       final changed = await repository.updateTask(
         id: id,
-        title: 'New',
+        title: '  New  ',
         priority: TaskPriority.low,
       );
 
       expect(changed, isTrue);
       expect((await repository.getTask(id)).title, 'New');
+      final events = await repository.getActivities(id);
+      expect(events.map((e) => e.type), [
+        ActivityType.created,
+        ActivityType.titleChanged,
+      ]);
+      expect(events.last.oldValue, 'Old');
+      expect(events.last.newValue, 'New');
+    });
+
+    test('description added, changed and removed are each recorded', () async {
+      final id = await createTask(title: 'D');
+
+      Future<void> setDescription(String? description) async {
+        final changed = await repository.updateTask(
+          id: id,
+          title: 'D',
+          description: description,
+          priority: TaskPriority.medium,
+        );
+        expect(changed, isTrue);
+      }
+
+      await setDescription(' first ');
+      await setDescription('second');
+      await setDescription('   ');
+
+      final events = await repository.getActivities(id);
+      expect(events.map((e) => e.type), [
+        ActivityType.created,
+        ActivityType.descriptionChanged,
+        ActivityType.descriptionChanged,
+        ActivityType.descriptionChanged,
+      ]);
+      expect(events.skip(1).map((e) => (e.oldValue, e.newValue)), [
+        (null, 'first'),
+        ('first', 'second'),
+        ('second', null),
+      ]);
+    });
+
+    test('changing every field in one save records one event per field, '
+        'in form order', () async {
+      final id = await createTask(
+        title: 'Old',
+        description: 'old notes',
+        priority: TaskPriority.low,
+      );
+
+      await repository.updateTask(
+        id: id,
+        title: 'New',
+        description: 'new notes',
+        priority: TaskPriority.high,
+      );
+
+      expect(await activityTypes(id), [
+        ActivityType.created,
+        ActivityType.titleChanged,
+        ActivityType.descriptionChanged,
+        ActivityType.priorityChanged,
+      ]);
+    });
+
+    test('whitespace-only edits record nothing', () async {
+      final id = await createTask(title: 'Same', description: 'notes');
+
+      final changed = await repository.updateTask(
+        id: id,
+        title: ' Same ',
+        description: 'notes  ',
+        priority: TaskPriority.medium,
+      );
+
+      expect(changed, isFalse);
       expect(await activityTypes(id), [ActivityType.created]);
+    });
+
+    test('title, description and priority events roll back together', () async {
+      final id = await createTask(title: 'Old', priority: TaskPriority.low);
+      final before = await snapshot();
+      failures.enabled = true;
+
+      await expectLater(
+        repository.updateTask(
+          id: id,
+          title: 'New',
+          description: 'notes',
+          priority: TaskPriority.high,
+        ),
+        throwsA(isA<WriteFailedFailure>()),
+      );
+
+      final after = await snapshot();
+      expect(after.tasks, before.tasks);
+      expect(after.activities, before.activities);
     });
   });
 

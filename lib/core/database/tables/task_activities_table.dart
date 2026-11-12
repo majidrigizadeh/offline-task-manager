@@ -14,7 +14,8 @@ class TaskActivities extends Table {
   TextColumn get taskId =>
       text().references(Tasks, #id, onDelete: KeyAction.cascade)();
 
-  /// `ActivityType.name` (created / priorityChanged / completed / reopened).
+  /// `ActivityType.name` (created / titleChanged / descriptionChanged /
+  /// priorityChanged / completed / reopened).
   TextColumn get type => text()();
   TextColumn get oldValue => text().nullable()();
   TextColumn get newValue => text().nullable()();

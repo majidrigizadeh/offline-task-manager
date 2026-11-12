@@ -114,6 +114,29 @@ void main() {
       () => db.select(db.taskActivities).get(),
     );
     expect(activitiesAfter, activitiesBefore);
+
+    // Title and description edits show up in the history.
+    await tester.tap(find.text('Buy milk'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.widgetWithText(TextField, 'Title *'),
+      'Buy oat milk',
+    );
+    await tester.enterText(
+      find.widgetWithText(TextField, 'Description (optional)'),
+      'From the corner shop',
+    );
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+    expect(find.text('Buy oat milk'), findsOneWidget);
+
+    await openHistory(tester);
+    expect(
+      find.text('Title changed: "Buy milk" → "Buy oat milk"'),
+      findsOneWidget,
+    );
+    expect(find.text('Description added'), findsOneWidget);
+    await closeSheet(tester);
   });
 
   testWidgets('scrolling loads further pages; a mutation keeps them loaded', (

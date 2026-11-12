@@ -11,10 +11,14 @@ abstract class TaskActivityEntity with _$TaskActivityEntity {
     required String taskId,
     required ActivityType type,
 
-    /// For [ActivityType.priorityChanged]: the previous `TaskPriority.name`.
+    /// The previous value for change events: the normalized title for
+    /// [ActivityType.titleChanged], the normalized description (`null` when
+    /// there was none) for [ActivityType.descriptionChanged], and the
+    /// `TaskPriority.name` for [ActivityType.priorityChanged].
     String? oldValue,
 
-    /// For [ActivityType.priorityChanged]: the new `TaskPriority.name`.
+    /// The new value for change events, in the same form as [oldValue]
+    /// (`null` when a description was removed).
     String? newValue,
     required DateTime createdAt,
   }) = _TaskActivityEntity;
