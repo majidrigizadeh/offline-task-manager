@@ -282,8 +282,12 @@ as int,
 /// @nodoc
 mixin _$TaskListState {
 
- TaskListStatus get status;/// Always the last list successfully read from the database.
- List<TaskEntity> get tasks;/// Latest search/filter intent. Survives mutations and reloads.
+ TaskListStatus get status;/// Always the last list successfully read from the database: every page
+/// loaded so far for the current query.
+ List<TaskEntity> get tasks;/// More tasks match the query beyond [tasks].
+ bool get hasMore;/// A next-page read is in flight (the list itself stays interactive).
+ bool get isLoadingMore;/// The last next-page read failed; [tasks] is unchanged.
+ String? get loadMoreError;/// Latest search/filter intent. Survives mutations and reloads.
  TaskQuery get query;/// Tasks with a mutation in flight (UI affordance only; correctness is
 /// enforced in the persistence layer).
  Set<String> get pendingTaskIds; String? get loadError; TaskActionError? get actionError;
@@ -298,20 +302,20 @@ $TaskListStateCopyWith<TaskListState> get copyWith => _$TaskListStateCopyWithImp
 @override
 bool operator ==(Object other) {
   final _this = this as TaskListState;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is TaskListState&&(identical(other.status, _this.status) || other.status == _this.status)&&const DeepCollectionEquality().equals(other.tasks, _this.tasks)&&(identical(other.query, _this.query) || other.query == _this.query)&&const DeepCollectionEquality().equals(other.pendingTaskIds, _this.pendingTaskIds)&&(identical(other.loadError, _this.loadError) || other.loadError == _this.loadError)&&(identical(other.actionError, _this.actionError) || other.actionError == _this.actionError));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TaskListState&&(identical(other.status, _this.status) || other.status == _this.status)&&const DeepCollectionEquality().equals(other.tasks, _this.tasks)&&(identical(other.hasMore, _this.hasMore) || other.hasMore == _this.hasMore)&&(identical(other.isLoadingMore, _this.isLoadingMore) || other.isLoadingMore == _this.isLoadingMore)&&(identical(other.loadMoreError, _this.loadMoreError) || other.loadMoreError == _this.loadMoreError)&&(identical(other.query, _this.query) || other.query == _this.query)&&const DeepCollectionEquality().equals(other.pendingTaskIds, _this.pendingTaskIds)&&(identical(other.loadError, _this.loadError) || other.loadError == _this.loadError)&&(identical(other.actionError, _this.actionError) || other.actionError == _this.actionError));
 }
 
 
 @override
 int get hashCode {
   final _this = this as TaskListState;
-  return Object.hash(runtimeType,_this.status,const DeepCollectionEquality().hash(_this.tasks),_this.query,const DeepCollectionEquality().hash(_this.pendingTaskIds),_this.loadError,_this.actionError);
+  return Object.hash(runtimeType,_this.status,const DeepCollectionEquality().hash(_this.tasks),_this.hasMore,_this.isLoadingMore,_this.loadMoreError,_this.query,const DeepCollectionEquality().hash(_this.pendingTaskIds),_this.loadError,_this.actionError);
 }
 
 @override
 String toString() {
   final _this = this as TaskListState;
-  return 'TaskListState(status: ${_this.status}, tasks: ${_this.tasks}, query: ${_this.query}, pendingTaskIds: ${_this.pendingTaskIds}, loadError: ${_this.loadError}, actionError: ${_this.actionError})';
+  return 'TaskListState(status: ${_this.status}, tasks: ${_this.tasks}, hasMore: ${_this.hasMore}, isLoadingMore: ${_this.isLoadingMore}, loadMoreError: ${_this.loadMoreError}, query: ${_this.query}, pendingTaskIds: ${_this.pendingTaskIds}, loadError: ${_this.loadError}, actionError: ${_this.actionError})';
 }
 
 
@@ -322,7 +326,7 @@ abstract mixin class $TaskListStateCopyWith<$Res>  {
   factory $TaskListStateCopyWith(TaskListState value, $Res Function(TaskListState) _then) = _$TaskListStateCopyWithImpl;
 @useResult
 $Res call({
- TaskListStatus status, List<TaskEntity> tasks, TaskQuery query, Set<String> pendingTaskIds, String? loadError, TaskActionError? actionError
+ TaskListStatus status, List<TaskEntity> tasks, bool hasMore, bool isLoadingMore, String? loadMoreError, TaskQuery query, Set<String> pendingTaskIds, String? loadError, TaskActionError? actionError
 });
 
 
@@ -339,11 +343,14 @@ class _$TaskListStateCopyWithImpl<$Res>
 
 /// Create a copy of TaskListState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? status = null,Object? tasks = null,Object? query = null,Object? pendingTaskIds = null,Object? loadError = freezed,Object? actionError = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? status = null,Object? tasks = null,Object? hasMore = null,Object? isLoadingMore = null,Object? loadMoreError = freezed,Object? query = null,Object? pendingTaskIds = null,Object? loadError = freezed,Object? actionError = freezed,}) {
   return _then(TaskListState(
 status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
 as TaskListStatus,tasks: null == tasks ? _self.tasks : tasks // ignore: cast_nullable_to_non_nullable
-as List<TaskEntity>,query: null == query ? _self.query : query // ignore: cast_nullable_to_non_nullable
+as List<TaskEntity>,hasMore: null == hasMore ? _self.hasMore : hasMore // ignore: cast_nullable_to_non_nullable
+as bool,isLoadingMore: null == isLoadingMore ? _self.isLoadingMore : isLoadingMore // ignore: cast_nullable_to_non_nullable
+as bool,loadMoreError: freezed == loadMoreError ? _self.loadMoreError : loadMoreError // ignore: cast_nullable_to_non_nullable
+as String?,query: null == query ? _self.query : query // ignore: cast_nullable_to_non_nullable
 as TaskQuery,pendingTaskIds: null == pendingTaskIds ? _self.pendingTaskIds : pendingTaskIds // ignore: cast_nullable_to_non_nullable
 as Set<String>,loadError: freezed == loadError ? _self.loadError : loadError // ignore: cast_nullable_to_non_nullable
 as String?,actionError: freezed == actionError ? _self.actionError : actionError // ignore: cast_nullable_to_non_nullable
@@ -453,10 +460,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( TaskListStatus status,  List<TaskEntity> tasks,  TaskQuery query,  Set<String> pendingTaskIds,  String? loadError,  TaskActionError? actionError)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( TaskListStatus status,  List<TaskEntity> tasks,  bool hasMore,  bool isLoadingMore,  String? loadMoreError,  TaskQuery query,  Set<String> pendingTaskIds,  String? loadError,  TaskActionError? actionError)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _TaskListState() when $default != null:
-return $default(_that.status,_that.tasks,_that.query,_that.pendingTaskIds,_that.loadError,_that.actionError);case _:
+return $default(_that.status,_that.tasks,_that.hasMore,_that.isLoadingMore,_that.loadMoreError,_that.query,_that.pendingTaskIds,_that.loadError,_that.actionError);case _:
   return orElse();
 
 }
@@ -474,10 +481,10 @@ return $default(_that.status,_that.tasks,_that.query,_that.pendingTaskIds,_that.
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( TaskListStatus status,  List<TaskEntity> tasks,  TaskQuery query,  Set<String> pendingTaskIds,  String? loadError,  TaskActionError? actionError)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( TaskListStatus status,  List<TaskEntity> tasks,  bool hasMore,  bool isLoadingMore,  String? loadMoreError,  TaskQuery query,  Set<String> pendingTaskIds,  String? loadError,  TaskActionError? actionError)  $default,) {final _that = this;
 switch (_that) {
 case _TaskListState():
-return $default(_that.status,_that.tasks,_that.query,_that.pendingTaskIds,_that.loadError,_that.actionError);case _:
+return $default(_that.status,_that.tasks,_that.hasMore,_that.isLoadingMore,_that.loadMoreError,_that.query,_that.pendingTaskIds,_that.loadError,_that.actionError);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -494,10 +501,10 @@ return $default(_that.status,_that.tasks,_that.query,_that.pendingTaskIds,_that.
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( TaskListStatus status,  List<TaskEntity> tasks,  TaskQuery query,  Set<String> pendingTaskIds,  String? loadError,  TaskActionError? actionError)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( TaskListStatus status,  List<TaskEntity> tasks,  bool hasMore,  bool isLoadingMore,  String? loadMoreError,  TaskQuery query,  Set<String> pendingTaskIds,  String? loadError,  TaskActionError? actionError)?  $default,) {final _that = this;
 switch (_that) {
 case _TaskListState() when $default != null:
-return $default(_that.status,_that.tasks,_that.query,_that.pendingTaskIds,_that.loadError,_that.actionError);case _:
+return $default(_that.status,_that.tasks,_that.hasMore,_that.isLoadingMore,_that.loadMoreError,_that.query,_that.pendingTaskIds,_that.loadError,_that.actionError);case _:
   return null;
 
 }
@@ -509,19 +516,27 @@ return $default(_that.status,_that.tasks,_that.query,_that.pendingTaskIds,_that.
 
 
 class _TaskListState implements TaskListState {
-  const _TaskListState({this.status = TaskListStatus.initial,  List<TaskEntity> tasks = const <TaskEntity>[], this.query = const TaskQuery(),  Set<String> pendingTaskIds = const <String>{}, this.loadError, this.actionError}): _tasks = tasks,_pendingTaskIds = pendingTaskIds;
+  const _TaskListState({this.status = TaskListStatus.initial,  List<TaskEntity> tasks = const <TaskEntity>[], this.hasMore = false, this.isLoadingMore = false, this.loadMoreError, this.query = const TaskQuery(),  Set<String> pendingTaskIds = const <String>{}, this.loadError, this.actionError}): _tasks = tasks,_pendingTaskIds = pendingTaskIds;
   
 
 @override@JsonKey() final  TaskListStatus status;
-/// Always the last list successfully read from the database.
+/// Always the last list successfully read from the database: every page
+/// loaded so far for the current query.
  final  List<TaskEntity> _tasks;
-/// Always the last list successfully read from the database.
+/// Always the last list successfully read from the database: every page
+/// loaded so far for the current query.
 @override@JsonKey() List<TaskEntity> get tasks {
   if (_tasks is EqualUnmodifiableListView) return _tasks;
   // ignore: implicit_dynamic_type
   return EqualUnmodifiableListView(_tasks);
 }
 
+/// More tasks match the query beyond [tasks].
+@override@JsonKey() final  bool hasMore;
+/// A next-page read is in flight (the list itself stays interactive).
+@override@JsonKey() final  bool isLoadingMore;
+/// The last next-page read failed; [tasks] is unchanged.
+@override final  String? loadMoreError;
 /// Latest search/filter intent. Survives mutations and reloads.
 @override@JsonKey() final  TaskQuery query;
 /// Tasks with a mutation in flight (UI affordance only; correctness is
@@ -548,18 +563,18 @@ _$TaskListStateCopyWith<_TaskListState> get copyWith => __$TaskListStateCopyWith
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _TaskListState&&(identical(other.status, status) || other.status == status)&&const DeepCollectionEquality().equals(other.tasks, _tasks)&&(identical(other.query, query) || other.query == query)&&const DeepCollectionEquality().equals(other.pendingTaskIds, _pendingTaskIds)&&(identical(other.loadError, loadError) || other.loadError == loadError)&&(identical(other.actionError, actionError) || other.actionError == actionError));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _TaskListState&&(identical(other.status, status) || other.status == status)&&const DeepCollectionEquality().equals(other.tasks, _tasks)&&(identical(other.hasMore, hasMore) || other.hasMore == hasMore)&&(identical(other.isLoadingMore, isLoadingMore) || other.isLoadingMore == isLoadingMore)&&(identical(other.loadMoreError, loadMoreError) || other.loadMoreError == loadMoreError)&&(identical(other.query, query) || other.query == query)&&const DeepCollectionEquality().equals(other.pendingTaskIds, _pendingTaskIds)&&(identical(other.loadError, loadError) || other.loadError == loadError)&&(identical(other.actionError, actionError) || other.actionError == actionError));
 }
 
 
 @override
 int get hashCode {
-    return Object.hash(runtimeType,status,const DeepCollectionEquality().hash(_tasks),query,const DeepCollectionEquality().hash(_pendingTaskIds),loadError,actionError);
+    return Object.hash(runtimeType,status,const DeepCollectionEquality().hash(_tasks),hasMore,isLoadingMore,loadMoreError,query,const DeepCollectionEquality().hash(_pendingTaskIds),loadError,actionError);
 }
 
 @override
 String toString() {
-    return 'TaskListState(status: $status, tasks: $tasks, query: $query, pendingTaskIds: $pendingTaskIds, loadError: $loadError, actionError: $actionError)';
+    return 'TaskListState(status: $status, tasks: $tasks, hasMore: $hasMore, isLoadingMore: $isLoadingMore, loadMoreError: $loadMoreError, query: $query, pendingTaskIds: $pendingTaskIds, loadError: $loadError, actionError: $actionError)';
 }
 
 
@@ -570,7 +585,7 @@ abstract mixin class _$TaskListStateCopyWith<$Res> implements $TaskListStateCopy
   factory _$TaskListStateCopyWith(_TaskListState value, $Res Function(_TaskListState) _then) = __$TaskListStateCopyWithImpl;
 @override @useResult
 $Res call({
- TaskListStatus status, List<TaskEntity> tasks, TaskQuery query, Set<String> pendingTaskIds, String? loadError, TaskActionError? actionError
+ TaskListStatus status, List<TaskEntity> tasks, bool hasMore, bool isLoadingMore, String? loadMoreError, TaskQuery query, Set<String> pendingTaskIds, String? loadError, TaskActionError? actionError
 });
 
 
@@ -587,11 +602,14 @@ class __$TaskListStateCopyWithImpl<$Res>
 
 /// Create a copy of TaskListState
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? status = null,Object? tasks = null,Object? query = null,Object? pendingTaskIds = null,Object? loadError = freezed,Object? actionError = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? status = null,Object? tasks = null,Object? hasMore = null,Object? isLoadingMore = null,Object? loadMoreError = freezed,Object? query = null,Object? pendingTaskIds = null,Object? loadError = freezed,Object? actionError = freezed,}) {
   return _then(_TaskListState(
 status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
 as TaskListStatus,tasks: null == tasks ? _self._tasks : tasks // ignore: cast_nullable_to_non_nullable
-as List<TaskEntity>,query: null == query ? _self.query : query // ignore: cast_nullable_to_non_nullable
+as List<TaskEntity>,hasMore: null == hasMore ? _self.hasMore : hasMore // ignore: cast_nullable_to_non_nullable
+as bool,isLoadingMore: null == isLoadingMore ? _self.isLoadingMore : isLoadingMore // ignore: cast_nullable_to_non_nullable
+as bool,loadMoreError: freezed == loadMoreError ? _self.loadMoreError : loadMoreError // ignore: cast_nullable_to_non_nullable
+as String?,query: null == query ? _self.query : query // ignore: cast_nullable_to_non_nullable
 as TaskQuery,pendingTaskIds: null == pendingTaskIds ? _self._pendingTaskIds : pendingTaskIds // ignore: cast_nullable_to_non_nullable
 as Set<String>,loadError: freezed == loadError ? _self.loadError : loadError // ignore: cast_nullable_to_non_nullable
 as String?,actionError: freezed == actionError ? _self.actionError : actionError // ignore: cast_nullable_to_non_nullable

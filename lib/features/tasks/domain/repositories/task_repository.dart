@@ -13,7 +13,13 @@ import '../enums/task_priority.dart';
 /// completing an already-completed task, or saving unchanged values). A no-op
 /// writes nothing.
 abstract interface class TaskRepository {
-  Future<List<TaskEntity>> getTasks(TaskQuery query);
+  /// Up to [limit] tasks matching [query], skipping the first [offset].
+  /// Newest first; insertion order breaks ties, so pages never overlap.
+  Future<List<TaskEntity>> getTasks(
+    TaskQuery query, {
+    required int offset,
+    required int limit,
+  });
 
   /// Throws `TaskNotFoundFailure` if [id] does not exist.
   Future<TaskEntity> getTask(String id);

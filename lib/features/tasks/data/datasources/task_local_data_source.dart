@@ -34,7 +34,13 @@ class TaskLocalDataSource {
 
   // ---------------------------------------------------------------- reads
 
-  Future<List<TaskModel>> getTasks(TaskQuery query) async {
+  /// Ordered by `created_at DESC, rowid DESC` — a total order, so
+  /// LIMIT/OFFSET pages are stable and never overlap.
+  Future<List<TaskModel>> getTasks(
+    TaskQuery query, {
+    required int offset,
+    required int limit,
+  }) async {
     final select = _db.select(_db.tasks)
       ..where((t) {
         final conditions = <Expression<bool>>[];
@@ -61,7 +67,8 @@ class TaskLocalDataSource {
       ..orderBy([
         (t) => OrderingTerm.desc(t.createdAt),
         (t) => OrderingTerm.desc(_db.tasks.rowId),
-      ]);
+      ])
+      ..limit(limit, offset: offset);
     final rows = await select.get();
     return rows.map((r) => r.toModel()).toList(growable: false);
   }

@@ -17,10 +17,23 @@ class FakeTaskRepository implements TaskRepository {
   /// Every getTasks call, in order.
   final List<TaskQuery> queries = [];
 
+  /// The (offset, limit) of every getTasks call, parallel to [queries].
+  final List<({int offset, int limit})> pageRequests = [];
+
   /// When true, getTasks returns a pending future registered in [pendingReads].
   bool holdReads = false;
-  final List<({TaskQuery query, Completer<List<TaskEntity>> completer})>
+  final List<
+    ({
+      TaskQuery query,
+      int offset,
+      int limit,
+      Completer<List<TaskEntity>> completer,
+    })
+  >
   pendingReads = [];
+
+  /// When set, getTasks throws it.
+  TaskFailure? failReadsWith;
 
   TaskFailure? failWritesWith;
   final List<String> writeCalls = [];
@@ -33,18 +46,34 @@ class FakeTaskRepository implements TaskRepository {
       )
       .toList();
 
+  List<TaskEntity> _page(TaskQuery q, int offset, int limit) =>
+      _filter(q).skip(offset).take(limit).toList();
+
   @override
-  Future<List<TaskEntity>> getTasks(TaskQuery query) {
+  Future<List<TaskEntity>> getTasks(
+    TaskQuery query, {
+    required int offset,
+    required int limit,
+  }) {
     queries.add(query);
-    if (!holdReads) return Future.value(_filter(query));
+    pageRequests.add((offset: offset, limit: limit));
+    final failure = failReadsWith;
+    if (failure != null) return Future.error(failure);
+    if (!holdReads) return Future.value(_page(query, offset, limit));
     final completer = Completer<List<TaskEntity>>();
-    pendingReads.add((query: query, completer: completer));
+    pendingReads.add((
+      query: query,
+      offset: offset,
+      limit: limit,
+      completer: completer,
+    ));
     return completer.future;
   }
 
+  /// Completes a held read with the data as it is *now*.
   void releaseRead(int index) {
     final read = pendingReads[index];
-    read.completer.complete(_filter(read.query));
+    read.completer.complete(_page(read.query, read.offset, read.limit));
   }
 
   Future<T> _write<T>(String name, T Function() apply) async {

@@ -20,9 +20,16 @@ class TaskRepositoryImpl implements TaskRepository {
   final TaskLocalDataSource _local;
 
   @override
-  Future<List<TaskEntity>> getTasks(TaskQuery query) => _read(
-    () async =>
-        (await _local.getTasks(query)).map((m) => m.toEntity()).toList(),
+  Future<List<TaskEntity>> getTasks(
+    TaskQuery query, {
+    required int offset,
+    required int limit,
+  }) => _read(
+    () async => (await _local.getTasks(
+      query,
+      offset: offset,
+      limit: limit,
+    )).map((m) => m.toEntity()).toList(),
   );
 
   @override

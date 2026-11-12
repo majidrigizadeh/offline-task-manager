@@ -22,8 +22,18 @@ abstract class TaskListState with _$TaskListState {
   const factory TaskListState({
     @Default(TaskListStatus.initial) TaskListStatus status,
 
-    /// Always the last list successfully read from the database.
+    /// Always the last list successfully read from the database: every page
+    /// loaded so far for the current query.
     @Default(<TaskEntity>[]) List<TaskEntity> tasks,
+
+    /// More tasks match the query beyond [tasks].
+    @Default(false) bool hasMore,
+
+    /// A next-page read is in flight (the list itself stays interactive).
+    @Default(false) bool isLoadingMore,
+
+    /// The last next-page read failed; [tasks] is unchanged.
+    String? loadMoreError,
 
     /// Latest search/filter intent. Survives mutations and reloads.
     @Default(TaskQuery()) TaskQuery query,

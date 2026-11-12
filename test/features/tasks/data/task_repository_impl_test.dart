@@ -7,6 +7,7 @@ import 'package:path/path.dart' as p;
 import 'package:testniksam/core/config/write_failure_config.dart';
 import 'package:testniksam/core/database/app_database.dart';
 import 'package:testniksam/core/error/failures.dart';
+import 'package:testniksam/core/utils/clock.dart';
 import 'package:testniksam/features/tasks/data/datasources/task_local_data_source.dart';
 import 'package:testniksam/features/tasks/data/repositories/task_repository_impl.dart';
 import 'package:testniksam/features/tasks/domain/entities/task_query.dart';
@@ -14,9 +15,16 @@ import 'package:testniksam/features/tasks/domain/enums/activity_type.dart';
 import 'package:testniksam/features/tasks/domain/enums/completion_filter.dart';
 import 'package:testniksam/features/tasks/domain/enums/task_priority.dart';
 import 'package:testniksam/features/tasks/domain/repositories/task_repository.dart';
+import 'package:testniksam/features/tasks/domain/usecases/get_tasks.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../../helpers/fake_clock.dart';
+
+/// Every call returns the same instant, to force `created_at` ties.
+class _FrozenClock implements Clock {
+  @override
+  DateTime now() => DateTime.utc(2026, 1, 1, 9);
+}
 
 typedef DbSnapshot = ({List<TaskRow> tasks, List<TaskActivityRow> activities});
 
@@ -385,7 +393,11 @@ void main() {
     });
 
     Future<List<String>> titles(TaskQuery query) async =>
-        (await repository.getTasks(query)).map((t) => t.title).toList();
+        (await repository.getTasks(
+          query,
+          offset: 0,
+          limit: 100,
+        )).map((t) => t.title).toList();
 
     test('no filters returns all tasks, newest first', () async {
       expect(await titles(const TaskQuery()), [
@@ -451,6 +463,99 @@ void main() {
     test('LIKE wildcards in the query are matched literally', () async {
       expect(await titles(const TaskQuery(search: '%')), ['100% done']);
       expect(await titles(const TaskQuery(search: '_')), ['snake_case']);
+    });
+  });
+
+  group('pagination', () {
+    late GetTasks getTasks;
+
+    setUp(() async {
+      getTasks = GetTasks(repository);
+      for (var i = 0; i < 7; i++) {
+        await createTask(
+          title: 'Task $i',
+          priority: i.isEven ? TaskPriority.high : TaskPriority.low,
+        );
+      }
+    });
+
+    Future<List<String>> allPages(TaskQuery query, int pageSize) async {
+      final titles = <String>[];
+      var hasMore = true;
+      while (hasMore) {
+        final page = await getTasks(
+          query,
+          offset: titles.length,
+          limit: pageSize,
+        );
+        expect(page.tasks.length, lessThanOrEqualTo(pageSize));
+        titles.addAll(page.tasks.map((t) => t.title));
+        hasMore = page.hasMore;
+      }
+      return titles;
+    }
+
+    test(
+      'pages concatenate to the full ordered list, no gaps or overlap',
+      () async {
+        expect(await allPages(const TaskQuery(), 3), [
+          for (var i = 6; i >= 0; i--) 'Task $i',
+        ]);
+      },
+    );
+
+    test('paging applies after search and filters', () async {
+      final page = await getTasks(
+        const TaskQuery(priority: TaskPriority.high),
+        limit: 2,
+      );
+      expect(page.tasks.map((t) => t.title), ['Task 6', 'Task 4']);
+      expect(page.hasMore, isTrue);
+      expect(await allPages(const TaskQuery(priority: TaskPriority.high), 2), [
+        'Task 6',
+        'Task 4',
+        'Task 2',
+        'Task 0',
+      ]);
+    });
+
+    test('hasMore is false when the last page is exactly full', () async {
+      final page = await getTasks(const TaskQuery(), offset: 4, limit: 3);
+      expect(page.tasks, hasLength(3));
+      expect(page.hasMore, isFalse);
+    });
+
+    test('an offset past the end returns an empty page', () async {
+      final page = await getTasks(const TaskQuery(), offset: 50, limit: 3);
+      expect(page.tasks, isEmpty);
+      expect(page.hasMore, isFalse);
+    });
+
+    test(
+      'tasks created in the same millisecond page by insertion order',
+      () async {
+        await db.delete(db.tasks).go();
+        final sameInstant = TaskRepositoryImpl(
+          TaskLocalDataSource(db, failures, const Uuid(), _FrozenClock()),
+        );
+        for (var i = 0; i < 5; i++) {
+          await sameInstant.createTask(
+            title: 'Tie $i',
+            priority: TaskPriority.medium,
+          );
+        }
+        expect(await allPages(const TaskQuery(), 2), [
+          for (var i = 4; i >= 0; i--) 'Tie $i',
+        ]);
+      },
+    );
+
+    test('rejects a negative offset or a non-positive limit', () {
+      expect(
+        () => getTasks(const TaskQuery(), offset: -1, limit: 1),
+        throwsRangeError,
+      );
+      expect(() => getTasks(const TaskQuery(), limit: 0), throwsRangeError);
     });
   });
 
