@@ -1,0 +1,9 @@
+targets:
+  $default:
+    builders:
+      drift_dev:
+        options:
+          # ISO-8601 text keeps millisecond precision and sorts lexicographically.
+          store_date_time_values_as_text: true
+          # We use explicit queries in the data source; skip the manager API.
+          generate_manager: false
