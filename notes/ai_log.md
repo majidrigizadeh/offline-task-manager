@@ -54,3 +54,15 @@ Template:
 - Problem: the human did not want the wrapped line breaks or the trailer in the history.
 - Detected by: human review of `git log`.
 - Fix: rewrote the 4 existing commits with `git commit-tree` (same trees and dates, cleaned messages); rule added to CLAUDE.md (single-line bullets, no trailers).
+
+## 00:42 — Two-connection concurrency test proved nothing
+- Suggested: Claude wrote a test firing `completeTask` concurrently from two `NativeDatabase.createInBackground` connections on one file, named "relies on the conditional UPDATE, not on Drift serialization".
+- Problem: a mutation check (temporarily replacing the conditional UPDATE with a naive read-check-write) still passed all 4 concurrency tests. The two connections' transactions never actually overlapped, so the test name overclaimed.
+- Detected by: deliberate mutation test (swap implementation, run tests, restore from backup).
+- Fix: replaced it with a deterministic test: connection B holds an open write transaction that completes the task; connection A's `completeTask` starts while B holds the lock; B commits. Re-ran the mutation check to confirm the naive version fails it.
+
+## 00:50 — Wrong locking model behind "UPDATE must be the first statement"
+- Suggested: Claude's plan and a code comment claimed the conditional UPDATE had to be the first statement of the transaction "so busy_timeout applies instead of failing on lock upgrade", and that a cross-connection test would show the naive read-check-write failing.
+- Problem: instrumenting the naive version showed connection A's transaction body did not start until B committed (~215 ms). Drift's native backend begins every transaction with `BEGIN IMMEDIATE` (drift/lib/src/sqlite3/database.dart), so the write lock is taken up front and the deferred-transaction lock-upgrade scenario never happens.
+- Detected by: mutation test + print instrumentation, then reading Drift source.
+- Fix: corrected the comment and test name. The test is kept because it genuinely guards `PRAGMA busy_timeout` (removing the pragma makes it fail with "database is locked"). The conditional UPDATE is kept as a third, backend-independent layer and documented honestly as defense-in-depth that no test isolates on this backend.
