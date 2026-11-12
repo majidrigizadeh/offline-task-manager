@@ -51,7 +51,7 @@ with events were also rejected, because the brief asks for Cubit.
 
 ## 2. Entities and models
 
-- **Domain:** `TaskEntity`, `TaskActivityEntity`, `TaskQuery` (search + priority + completion filter), plus the `TaskPriority`, `ActivityType` and `CompletionFilter` enums.
+- **Domain:** `TaskEntity`, `TaskActivityEntity`, `TaskQuery` (search + priority + completion filter), `TaskPage` (one slice of the list + `hasMore`), plus the `TaskPriority`, `ActivityType` and `CompletionFilter` enums.
 - **Data:** `TaskModel` and `TaskActivityModel` are Freezed + json_serializable DTOs that store enums as `name` strings. JSON isn't used today; these are the shapes a sync API would exchange (§9).
 - **Storage:** Drift tables `tasks` and `task_activities`, with `task_id` as a foreign key to `tasks.id` using **ON DELETE CASCADE**, plus indexes for filters, list order and the timeline. IDs are client-generated UUIDs. Timestamps are stored as ISO text for millisecond precision, and the timeline is ordered by `created_at, rowid`.
 - **Mapping:** row → model → entity, done only through extension methods. Parsing is safe: an unknown priority falls back to `medium`, and an unknown activity type is skipped rather than crashing.
@@ -77,7 +77,7 @@ by the form's local "unchanged?" check and by the data source's diff. That way
 
 ## 4. Cubits
 
-- **TaskListCubit** handles load, debounced search, immediate filters, complete/reopen/delete and retry. State is `status` (initial/loading/success/empty/failure), `tasks`, `query`, `pendingTaskIds` and a transient `actionError`. There are **no optimistic updates**: after every mutation, successful or not, the list reloads from the database with the *current* query. `close()` cancels the debounce timer.
+- **TaskListCubit** handles load, paging, debounced search, immediate filters, complete/reopen/delete and retry. State is `status` (initial/loading/success/empty/failure), `tasks`, `query`, `hasMore`, `isLoadingMore`, `loadMoreError`, `pendingTaskIds` and a transient `actionError`. There are **no optimistic updates**: after every mutation, successful or not, the list reloads from the database with the *current* query, re-reading as many rows as were loaded (`refresh`). `close()` cancels the debounce timer.
 - **TaskFormCubit** is one form for create and edit (factory parameter: the task being edited, if any). It handles field state, title validation and a local unchanged check, and keeps the input on failure, where pressing Save again retries.
 - The timeline sheet calls the `GetTaskActivities` use case through a `FutureBuilder`. It's a single read with no state transitions, so a third cubit would be ceremony.
 
@@ -115,6 +115,23 @@ Every load captures its request id and emits only if it's still the latest
 one, so a slow older result can never overwrite a newer one. Filter changes
 load immediately with the full current query. Mutations reload with the same
 query, so search and filters survive mutations.
+
+**Pagination:** pages of 20, ordered by `created_at DESC, rowid DESC`. That
+is a total order, so LIMIT/OFFSET pages never overlap or skip rows. `GetTasks`
+asks the repository for `limit + 1` rows and reports `hasMore` from the extra
+row, so no COUNT query is needed. A new search or filter starts again from
+page one. `loadMore` appends `offset = tasks.length` and shares the request-id
+counter, so any later reload or keystroke makes an in-flight next page stale.
+It is ignored while the shown rows don't belong to the current query (during
+the search debounce). Mutations and form saves re-read the whole loaded window
+from offset 0 (at least one page), so a delete pulls the next stored row in and
+the list never jumps back to page one. Offset paging was chosen over a keyset
+cursor because the sort tie-breaker (`rowid`) isn't part of the entity and the
+only writer is this cubit. If a next page still overlaps rows already shown, the
+cubit treats it as a shifted offset and re-reads the whole window. The list
+requests the next page when its footer row is built (near the end, or when
+the loaded rows don't fill the screen); a failed next page shows **Retry** in
+the footer instead of retrying in a loop.
 
 ## 7. History on delete
 

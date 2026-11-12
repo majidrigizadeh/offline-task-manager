@@ -62,7 +62,11 @@ lib/features/<feature>/{domain,data,presentation}
 - flutter_bloc Cubits only (no GetX, no setState for business state).
 - States are Freezed classes. Prefer `BlocSelector`/`buildWhen` to limit rebuilds.
 - **No optimistic updates.** After a mutation (success or failure) the list is
-  reloaded from the database using the *current* query/filters.
+  reloaded from the database using the *current* query/filters, re-reading
+  every row already loaded (at least one page) from offset 0.
+- The task list is paged (`AppConstants.taskPageSize`). `GetTasks` returns a
+  `TaskPage`; the repository/data source only take `offset`/`limit`. Every
+  read, including next pages, goes through the cubit's request-id guard.
 - Cubits cancel timers/subscriptions in `close()`. Widgets dispose their
   `TextEditingController`s.
 

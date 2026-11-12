@@ -30,6 +30,7 @@ wall-clock time on this machine.
 | Search by title (debounced, latest query wins, `%`/`_` matched literally) | Done | Repository + cubit tests |
 | Filter by priority and by completion, combinable with search | Done | Repository + cubit tests |
 | Search and filters preserved after mutations | Done | Cubit test |
+| Paged task list (20 per page, loads the next page on scroll, retry on failure; loaded pages kept across mutations) | Done | Repository (real SQLite) + cubit + widget tests |
 | Activity timeline bottom sheet (chronological, readable timestamps, old → new priority) | Done | Widget test (created / completed / reopened rows) |
 | Loading, empty, error states | Done | Code review only (no dedicated test) |
 | Atomic task + activity writes | Done | Repository tests |
@@ -75,21 +76,21 @@ was passed. `FAIL_WRITES` is read in exactly one place:
 ## Tests
 
 ```bash
-flutter test            # 36 tests
+flutter test            # 51 tests
 dart format .
 flutter analyze
 ```
 
-- `test/features/tasks/data/task_repository_impl_test.dart` (25 tests). Runs against **real SQLite** (in-memory, plus temp files for the restart and two-connection cases) and covers atomicity, rollback for every mutation, no-op saves, duplicate prevention (including the required `Future.wait` test), priority history, not-found handling, combined filters, cascade delete and restart.
-- `test/features/tasks/presentation/task_list_cubit_test.dart` (7 tests). Latest query wins, debouncing, filters kept across mutations, pending-tap guard, failure + retry, timer disposal.
+- `test/features/tasks/data/task_repository_impl_test.dart` (31 tests). Runs against **real SQLite** (in-memory, plus temp files for the restart and two-connection cases) and covers atomicity, rollback for every mutation, no-op saves, duplicate prevention (including the required `Future.wait` test), priority history, not-found handling, combined filters, cascade delete, restart, and paging through `GetTasks` (pages concatenate without gaps or overlap, including `created_at` ties; filters apply before paging; exact-full last page; out-of-range offset).
+- `test/features/tasks/presentation/task_list_cubit_test.dart` (15 tests). Latest query wins, debouncing, filters kept across mutations, pending-tap guard, failure + retry, timer disposal, and paging: first page, load more until the end, mutations reload all loaded rows, filter change resets to page one, a stale next page is dropped, no load-more while a search debounces, failed next page + retry, shifted rows trigger a full reload.
 - `test/features/tasks/presentation/task_form_cubit_test.dart` (3 tests). Validation, unchanged edit not written, failure keeps input + retry.
-- `test/app_flow_test.dart` (1 test). Drives the real app (DI, router, cubits, repository) on in-memory SQLite: create → complete → history → simulated failure → retry → unchanged edit.
+- `test/app_flow_test.dart` (2 tests). Drives the real app (DI, router, cubits, repository) on in-memory SQLite: create → complete → history → simulated failure → retry → unchanged edit; and, on a phone-sized screen, scrolling through 45 tasks (3 pages) and completing the last one without the list dropping back to page one.
 
 Several tests were also checked by **mutation**: the guarded code was
 temporarily broken to confirm the test fails, then restored. Details are in
 [AI_WORKFLOW.md](AI_WORKFLOW.md).
 
-Last run: `flutter analyze` → *No issues found*; `flutter test` → *36 passed*.
+Last run: `flutter analyze` → *No issues found*; `flutter test` → *51 passed*.
 
 ## Packages
 
@@ -120,7 +121,7 @@ Packages that were considered but not added:
 - Only priority changes create a history event. Title and description edits are saved but not recorded, because the brief defines just four event types.
 - Deleting a task hard-deletes its history (see DESIGN.md §7; sync implications in §8).
 - The search is case-insensitive for ASCII only (SQLite `LIKE` default).
-- No pagination. The list loads all matching tasks.
+- Paging uses LIMIT/OFFSET, not a keyset cursor. That's fine for a single-user local database: every in-app change reloads the loaded window from offset 0, and a next page that overlaps rows already shown triggers a full reload. After a mutation the cubit re-reads every loaded row, so a very long scroll makes each reload proportionally larger.
 - The timeline is fetched once when the sheet opens and doesn't live-update.
 
 ## Unfinished / cut
